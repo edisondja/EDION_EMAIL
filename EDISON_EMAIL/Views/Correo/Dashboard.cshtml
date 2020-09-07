@@ -1,0 +1,262 @@
+﻿
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
+    <!-- CSS -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css" />
+    <!-- Default theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/default.min.css" />
+    <!-- Semantic UI theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/semantic.min.css" />
+    <!-- Bootstrap theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/bootstrap.min.css" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.rtl.min.css" />
+    <!-- Default theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/default.rtl.min.css" />
+    <!-- Semantic UI theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/semantic.rtl.min.css" />
+    <!-- Bootstrap theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/bootstrap.rtl.min.css" />
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3">
+                <h2 id="hola">
+                   
+                </h2>
+                <ul>
+                    <li class="menu" onclick="enviar_correo()">Enviar Correo</li>
+                    <li class="menu" onclick="correos_enviados()">Enviados</li>
+                    <li class="menu" onclick="correos_recibidos()">Recibidos</li>
+                    <li class="menu" onclick="leer_spam()">Spam</li>
+                    <li class="menu" onclick="Cerrar_sesion()">Cerrar Sesion</li>
+
+                </ul>
+
+            </div>
+            <div class="col-md-9">
+            
+                <input type="hidden" id="id_correo" value="@TempData["id_correo"]" />
+                <h3>Bandeja de correos recibidos</h3><hr />
+                <div>
+                    <ul id="correos">
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</body>
+</html>
+<script>
+    
+
+    function Cerrar_sesion() {
+        localStorage.clear();
+        window.location.href = '/'
+
+    }
+
+    function Redirect_toFile(url) {
+
+        window.location = url;
+    }
+
+    function ver_correo_modal(nombre, apellido, nombre_correo, asunto, descripcion, ruta_archivo) {
+        let ruta_de_archivo = "https://localhost:44309/Adjuntos/"+ruta_archivo;
+        alertify.alert("EDISON EMAIL", `
+               <p>Recibido de : <strong>${nombre_correo}</strong></p> 
+               <p>Asunto : ${asunto}</p></hr>
+               <p>Cuerpo correo: ${descripcion}</p></br>
+               <strong>Archivo Adjunto</strong></br>
+               <img src="${ruta_de_archivo}" width="150" />
+        `, function () { });
+    }
+    function enviar_correo() {
+        let id_correo = $('#id_correo').val();
+
+        alertify.alert('Enviar correo', `
+                <form id='enviar_nuevo_correo' method='post' enctype='multipart/form-data' action='enviar_correos'>
+                <input tpye='text' requerid="" name='titulo' class='form-control' id='asunto' placeholder='asunto del correo'><br/>
+                <textarea class='form-control' name='descripcion' requerid="" id='texto'></textarea><br></hr>
+                <p>Destinario</p></br>
+                <input type='hidden' name='id_emisor' value="${localStorage.getItem('id_correo')}">
+                <input type='text' requerid="" name='correo_resector' class='form-control' id='destinario'/></br>
+                <p>Subir archivo</p></br>
+                <input type='file' name='file' class='form-control'/>
+                <button type='submit' class='btn btn-dark'>Enviar correo</button>
+                </form>
+
+         `, function () {
+
+
+
+                if ($('#asunto').val() != "" && $('#destinario').val() != "" && $('#texto').val() != "") {
+                   /* var formData = new FormData($('#enviar_nuevo_correo')[0]);
+
+                    $.ajax({
+                        url: '/Correo/enviar_correos',
+                        method:'post',
+                        data: {
+                            titulo: $('#asunto').val(),
+                            descripcion: $('#texto').val(),
+                            id_emisor: $('#id_correo').val(),
+                            correo_resector: $('#destinario').val()
+                        }
+
+
+                    }).done(data => {
+
+                        alertify.message(data);
+                    });
+                    */
+                } else {
+
+                    alertify.message("Faltan campos por llenar");
+                }
+
+
+        });
+
+    }
+
+    function leer_spam() {
+
+        $.ajax({
+            url: '/Correo/Correos_Spam',
+            type: 'post',
+            data: {
+                id_correo: localStorage.getItem("id_correo")
+            }
+
+        }).done(data => {
+            let correos = "";
+            data.forEach(data => {
+
+                correos += `<li class="correos" onclick="ver_correo_modal('${data.nombre}','${data.apellido}','${data.correo_emisor}','${data.titulo}','${data.descripcion},'${data.ruta_archivo}')">"${data.nombre}" / ${data.titulo} ${data.descripcion}</li><hr/>`;
+
+            });
+
+            $('#correos').html(correos);
+
+        });
+
+
+
+    }
+
+    function correos_enviados() {
+
+        $.ajax({
+            url: '/Correo/leer_correos',
+            type: 'post',
+            data: {
+                id_correo: localStorage.getItem("id_correo"),
+                config:null
+            }
+
+        }).done(data => {
+            let correos = "";
+            data.forEach(data => {
+
+                correos += `<li class="correos" onclick="ver_correo_modal('${data.nombre}','${data.apellido}','${data.correo_emisor}','${data.titulo}','${data.descripcion}','${data.ruta_archivo}')">"${data.nombre}" / ${data.titulo} ${data.descripcion}</li><hr/>`;
+
+            });
+
+            $('#correos').html(correos);
+
+        });
+
+
+    }
+
+ 
+
+    function correos_recibidos() {
+
+        $.ajax({
+            url: '/Correo/leer_correos',
+            type: 'post',
+            data: {
+                id_correo: localStorage.getItem("id_correo"),
+                config:'leer_recibidos'
+            }
+
+        }).done(data => {
+            let correos = "";
+            data.forEach(data => {
+
+                correos += `<li class="correos" onclick="ver_correo_modal('${data.nombre}','${data.apellido}','${data.correo_emisor}','${data.titulo}','${data.descripcion}','${data.ruta_archivo}')">"${data.nombre}" / ${data.titulo} ${data.descripcion}</li><hr/>`;
+
+
+            });
+
+            $('#correos').html(correos);
+
+        });
+
+
+    }
+    $('document').ready(function () {
+        if (typeof (Storage) !== "undefined") {
+            // LocalStorage disponible
+        } else {
+            // LocalStorage no soportado en este navegador
+        }
+        if (localStorage.getItem("nombre") === null) {
+
+            localStorage.setItem("nombre", "@TempData["nombre"]");
+            localStorage.setItem('id_correo', "@TempData["id_correo"]");
+        }
+    
+        var nombre = localStorage.getItem("nombre");
+        var id_correo = localStorage.getItem("id_correo");
+
+        $('#hola').html(nombre);
+     
+        correos_recibidos();
+
+
+    });
+
+    
+
+
+</script>
+<style>
+    ul{
+       text-decoration:none;
+       list-style:none
+    }
+    .menu {
+        padding: 15px;
+        background: #afb1efc7;
+        border-radius: 10px;
+        margin-top:5px;
+        cursor:pointer;
+    }
+
+    .correos {
+        padding: 5px;
+        background: #ffd994;
+        border-radius: 5px;
+        cursor:pointer;
+    }
+
+        .menu:hover {
+            background: #8182adc7;
+        }
+
+
+
+</style>
+
